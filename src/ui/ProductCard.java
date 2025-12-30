@@ -7,6 +7,7 @@ package ui;
 import java.awt.*;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SwingUtilities;
 import jdk.jfr.Enabled;
@@ -20,7 +21,7 @@ public class ProductCard extends javax.swing.JPanel {
     /**
      * Creates new form ProductCard2
      */
-    
+    private cashierUI cashierUI;
     private Product product;
     
     private void setProductImage(String imageName) {
@@ -51,32 +52,50 @@ public class ProductCard extends javax.swing.JPanel {
         });
     };
     
-    public ProductCard(Product product, String name, double price, String imageName) {
+    public ProductCard(cashierUI cashierUI, Product product, String name, double price, String imageName) {
         initComponents();
         this.product = product;
+        this.cashierUI = cashierUI;
         
         setLayout(new GridBagLayout());   // center content
         add(contentPanel);
         
         jLabelName.setText(name);
         jLabelPrice.setText("$ " + price);
-        
         setProductImage(imageName);
         
         // set fixed size for productCard to avoid from stretching
         setPreferredSize(new Dimension(220, 260));
         setMinimumSize(new Dimension(220, 260));
         setMaximumSize(new Dimension(220, 260));
-
+        
+        addToCartButton.addActionListener(e -> {
+            int qty = (int) quantitySpinner.getValue();
+            
+            if (qty <= 0) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Please select a quantity greater than 0",
+                    "Invalid Quantity",
+                    JOptionPane.WARNING_MESSAGE
+                );
+                quantitySpinner.setValue(0);
+                return;
+            }
+            
+            cashierUI.addProductToCart(product, qty);
+            quantitySpinner.setValue(0);
+        });
         setOpaque(false); // important
     }    
+
     
     public JButton getPurchaseButton() {
-        return purchaseButton;
+        return addToCartButton;
     }
     
     public JSpinner getSpinner(){
-        return jSpinner1;
+        return quantitySpinner;
     }
     
     public Product getProduct() {
@@ -91,9 +110,6 @@ public class ProductCard extends javax.swing.JPanel {
         return product.getPrice();
     }
     
-    public String getCategory(){
-        return gate
-    }
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -108,8 +124,8 @@ public class ProductCard extends javax.swing.JPanel {
         jLabel1 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jSpinner1 = new javax.swing.JSpinner();
-        purchaseButton = new javax.swing.JButton();
+        quantitySpinner = new javax.swing.JSpinner();
+        addToCartButton = new javax.swing.JButton();
         jLabelName = new javax.swing.JLabel();
         jLabelPrice = new javax.swing.JLabel();
         imageLabel = new javax.swing.JLabel();
@@ -130,9 +146,9 @@ public class ProductCard extends javax.swing.JPanel {
         jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel2.setText("Price:");
 
-        purchaseButton.setText("Add to cart");
-        purchaseButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        purchaseButton.addActionListener(this::purchaseButtonActionPerformed);
+        addToCartButton.setText("Add to cart");
+        addToCartButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        addToCartButton.addActionListener(this::addToCartButtonActionPerformed);
 
         imageLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         imageLabel.setMaximumSize(new java.awt.Dimension(100, 180));
@@ -159,12 +175,12 @@ public class ProductCard extends javax.swing.JPanel {
                                 .addGroup(contentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addGroup(contentPanelLayout.createSequentialGroup()
                                         .addGap(6, 6, 6)
-                                        .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addComponent(quantitySpinner, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE))
                                     .addGroup(contentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                         .addComponent(jLabelName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                         .addComponent(jLabelPrice, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE))))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, contentPanelLayout.createSequentialGroup()
-                                .addComponent(purchaseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(addToCartButton, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(21, 21, 21)))))
                 .addContainerGap())
         );
@@ -184,21 +200,22 @@ public class ProductCard extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(contentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
-                    .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(quantitySpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(12, 12, 12)
-                .addComponent(purchaseButton)
+                .addComponent(addToCartButton)
                 .addContainerGap(19, Short.MAX_VALUE))
         );
 
         add(contentPanel, new java.awt.GridBagConstraints());
     }// </editor-fold>//GEN-END:initComponents
 
-    private void purchaseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_purchaseButtonActionPerformed
+    private void addToCartButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addToCartButtonActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_purchaseButtonActionPerformed
+    }//GEN-LAST:event_addToCartButtonActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton addToCartButton;
     private javax.swing.JPanel contentPanel;
     private javax.swing.JLabel imageLabel;
     private javax.swing.JLabel jLabel1;
@@ -206,7 +223,6 @@ public class ProductCard extends javax.swing.JPanel {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabelName;
     private javax.swing.JLabel jLabelPrice;
-    private javax.swing.JSpinner jSpinner1;
-    private javax.swing.JButton purchaseButton;
+    private javax.swing.JSpinner quantitySpinner;
     // End of variables declaration//GEN-END:variables
 }

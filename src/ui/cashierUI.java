@@ -33,18 +33,7 @@ public class cashierUI extends javax.swing.JFrame {
         grandTotalText.setText(formatMoney(grandTotal));
         discountInput.setText("0");
     }
-    
-    private void calculateTax(){
-        tax = subTotal * 0.1;
-        taxRateText.setText(formatMoney(tax));
-    }
-    
-    private void initAllButton(){
-        allButton.addActionListener(e -> {
-            loadProducts();
-        });
-    }
-    
+ 
     private void discountButton(){
         applyButton.addActionListener(e -> {
             
@@ -94,6 +83,7 @@ public class cashierUI extends javax.swing.JFrame {
             String imageName = ProductImageMapper.getImage(p.getName());
             
             ProductCard card = new ProductCard(
+                    this,
                     p,
                     p.getName(),
                     p.getPrice(),
@@ -143,6 +133,7 @@ public class cashierUI extends javax.swing.JFrame {
             String imageName = ProductImageMapper.getImage(p.getName());
 
             ProductCard card = new ProductCard(
+                this,
                 p,
                 p.getName(),
                 p.getPrice(),
@@ -157,88 +148,15 @@ public class cashierUI extends javax.swing.JFrame {
         productContainer.repaint();
     }
 
-    
-    
-    
-    
-    
-    private int findProductInCart(String productName) {
-        for (int i = 0; i < cartModel.getRowCount(); i++) {
-            Object value = cartModel.getValueAt(i, 0);
-
-            if (value != null && value.toString().equals(productName)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     private String formatMoney(double value) {
         return String.format("$ %.2f", value);
-    }
-    
-    private void addToCart(ProductCard card) {
-        grandTotalText.setVisible(false);
-        int quantity = (int) card.getSpinner().getValue();
-
-        if (quantity <= 0) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Please select quantity",
-                "Warning",
-                JOptionPane.WARNING_MESSAGE
-            );
-            resetAllQuantities();
-            return;
-        }
-
-        String name = card.getProductName();
-        double price = card.getProductPrice();
-        double total = price * quantity;
-        
-        subTotal += total;
-        
-        int rowIndex = findProductInCart(name);
-
-        if (rowIndex >= 0) {
-            // Product already exists → update quantity
-            int oldQty = (int) cartModel.getValueAt(rowIndex, 2);
-            int newQty = oldQty + quantity;
-            double newTotal = price * newQty;
-            
-            cartModel.setValueAt(newQty, rowIndex, 2);
-            cartModel.setValueAt(formatMoney(newTotal), rowIndex, 3);
-        } else {
-            // New product
-            cartModel.addRow(new Object[]{
-                name,
-                price,
-                quantity,
-                formatMoney(total),
-            });
-        }
-       
-    }
-    private void purchaseButtonLogic() {
-        System.out.println("Cards found: " + productCards.size());
-
-        for (ProductCard card : productCards) {
-            card.getPurchaseButton().addActionListener(e -> {
-                addToCart(card);
- 
-                
-                subtotalText.setText(String.format("$ %.2f", subTotal));
-                calculateTax();
-               
-                resetAllQuantities();
-            });
-        }
     }
     
     private void initDeleteButton(){
         deleteButton.setEnabled(false);
         deleteButton.addActionListener(evt -> deleteButtonActionPerformed(evt));
     }
+    
     private void initCartTable(){
         cartModel = (DefaultTableModel) cartTable.getModel();
         
@@ -251,6 +169,7 @@ public class cashierUI extends javax.swing.JFrame {
             }
         });
     }
+    
     private void deleteButtonActionPerformed(java.awt.event.ActionEvent evt) {
 
         int selectedRow = cartTable.getSelectedRow();
@@ -278,16 +197,6 @@ public class cashierUI extends javax.swing.JFrame {
         deleteButton.setEnabled(false);
         grandTotalText.setVisible(false);
     }
-    private void updateTotals() {
-        subtotalText.setText(formatMoney(subTotal));
-
-        calculateTax();
-        
-        if (cartModel.getRowCount() == 0) {
-            grandTotalText.setText(formatMoney(grandTotal));
-        }
-
-    }
 
     private void clear(){
         subTotal = 0;
@@ -299,29 +208,108 @@ public class cashierUI extends javax.swing.JFrame {
         cartModel.setRowCount(0); // remove all empty rows
     }
     
-    
-    
     private void initClearButton(){
         clearButton.addActionListener(e -> {
             clear();
         });
     }
     
+    private void updateTotals() {
+        double subtotal = 0;
+        cartModel = (DefaultTableModel) cartTable.getModel();
+
+        for (int i = 0; i < cartModel.getRowCount(); i++) {
+            String totalStr = cartModel.getValueAt(i, 3).toString();
+            subtotal += parseMoney(totalStr);
+        }
+
+        subTotal = subtotal;
+
+        subtotalText.setText(formatMoney(subTotal));
+        calculateTax();
+        calculateGrandTotal();
+    }
+    
+    private double parseMoney(String moneyText) {
+        return Double.parseDouble(
+                moneyText.replace("$", "").trim()
+        );
+    }
+    
+    private void calculateTax() {
+        tax = subTotal * 0.10;
+        taxRateText.setText(formatMoney(tax));
+    }
+    
+    private void calculateGrandTotal() {
+        tax = subTotal * 0.10;
+
+        discount = 0;
+        if (!discountInput.getText().isEmpty()) {
+            discount = Double.parseDouble(discountInput.getText());
+        }
+
+        double discountAmount = subTotal * (discount / 100.0);
+        grandTotal = subTotal + tax - discountAmount;
+
+        grandTotalText.setText(formatMoney(grandTotal));
+    }
+    
+    public void addProductToCart(Product product, int quantity) {
+        grandTotalText.setVisible(false);
+        
+        cartModel = (DefaultTableModel) cartTable.getModel();
+
+        String name = product.getName();
+        double price = product.getPrice();
+        double total = price * quantity;
+
+        boolean found = false;
+
+        for (int i = 0; i < cartModel.getRowCount(); i++) {
+            String existingName = cartModel.getValueAt(i, 0).toString();
+
+            if (existingName.equals(name)) {
+                int oldQty = Integer.parseInt(
+                        cartModel.getValueAt(i, 2).toString()
+                );
+
+                int newQty = oldQty + quantity;
+                double newTotal = newQty * price;
+
+                cartModel.setValueAt(newQty, i, 2);
+                cartModel.setValueAt(formatMoney(newTotal), i, 3);
+
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            cartModel.addRow(new Object[]{
+                    name,
+                    price,
+                    quantity,
+                    formatMoney(total)
+            });
+        }
+
+        updateTotals();
+    }
+
+
+    
     /**
      * Creates new form cashierUI
      */
     public cashierUI() {
         initComponents();
+        loadProducts();
         initCategoryButtons();
         initDefault();
         initCartTable();
         initDeleteButton();
         initClearButton();
-        
-        
-        
-        loadProducts();
-        purchaseButtonLogic();
         discountButton();
         setLocationRelativeTo(null);
     }
